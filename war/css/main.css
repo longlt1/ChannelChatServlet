@@ -1,0 +1,42 @@
+
+body {
+    font-family:Arial, Helvetica, Sans-Serif;
+    margin-left:5%;
+    margin-right:10%;
+    background:#fff;
+	font-size:10pt;
+}
+
+#content {
+	heght: 100%;
+	background:#bdf;
+}
+
+.wrap {
+	border: 1px;
+	border-color: #aaa;
+	border-style: solid;
+	padding:2px;
+}
+
+.chat_container {
+	height: 120px;
+	overflow:auto;
+}
+
+.chat_input {
+	vertical-align: middle;
+	width: 600px;
+}
+
+chat_widget {
+	display: block;
+}
+
+chat_container chat_control_area chat_wrap {
+	display:block;
+}
+
+.chat_button {
+	vertical-align: middle;
+}

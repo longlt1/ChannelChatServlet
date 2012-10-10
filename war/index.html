@@ -1,0 +1,128 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>channel chat</title>
+    <link rel="stylesheet" href="css/main.css" type="text/css" />
+	<script src='/_ah/channel/jsapi'></script>
+	<script src='lib/jquery-1.6.1.min.js'></script>
+</head>
+<script>
+
+	var theChat = null;
+	
+	$(function(){
+		$("#status").text("Connecting ...");
+		$("#send_button").attr('disabled', 'true');
+		sendMessage( createTokenPacket() );		
+		theChat = new chat( $("#chat_area"), $("#editor") );
+	});
+
+	function sendMessage( pack ) {
+		$.post( "http://localhost:8888/chat",
+		//$.post( "http://channelchatservlet.appspot.com/chat",  
+				pack, receiveMessage );
+	}	
+	
+	function receiveMessage(resp) {
+		if( resp.length == 0 )
+			return;
+			
+		var data = eval("(" + resp + ")");
+		
+		if( data.type == "token" ) {
+			var token = data.token;
+			openChannel(token);
+		}
+		else if( data.type == "message" ) {
+			theChat.addMessage(data);
+		}
+	}
+	
+	function channelOpened() {
+		$("#status").text("Channel opened");
+		$("#send_button").removeAttr("disabled");
+	}
+	
+	function channelMessage( pack ) {
+		receiveMessage( pack.data );
+	}
+	
+	function openChannel(token) {
+    	var channel = new goog.appengine.Channel(token);
+        
+    	var handler = {
+      		'onopen': channelOpened,
+      		'onmessage': channelMessage,
+      		'onerror': function() {},
+      		'onclose': function() {}
+    	};
+    	
+    	var socket = channel.open(handler);
+	}
+	
+	function createTokenPacket() {
+		return {
+			type: "get_token"
+		}
+	}
+	
+	function sendPressed() {
+		sendMessage( theChat.getMessage() );
+		$("#editor").val("");
+	}
+	
+	function chat(container, editor) {
+		this.container = container;
+		this.editor = editor;
+		this.loadNewLines = chat.loadNewLines;
+		this.addLine = chat.addLine;
+		this.getMessage = chat.getMessage;
+		this.messages = new Array();
+		this.addMessage = chat.addMessage;
+	}
+
+	chat.loadNewLines = function(lines) {
+		(this.container).empty();
+		for( var i = 0; i < lines.length; i++ ) {
+			(this.container).append( lines[i] + "<br>" );
+		}
+	}
+
+	chat.addLine = function(line) {
+		(this.container).append( line + "<br>" );
+		(this.container[0]).scrollTop = (this.container[0]).scrollHeight;
+	}
+
+	chat.addMessage = function(message) {
+		if( (this.messages).length > 100 ) {
+			(this.messages).shift();
+			(this.container).children(':first-child').remove();
+		}
+
+		(this.messages).push(message);
+
+		var line = message.user + " : " + message.text;
+
+		this.addLine( line );
+	}
+
+	chat.getMessage = function() {
+		var mess = this.editor.val();
+		return { 	type: "message",
+					text: mess };
+	}
+	
+</script>
+<body>
+	<div id="content">
+		<h1>GAE Chat !!!</h1>
+		<p id="status"></p>
+		<div id="chat-wrap" class="wrap"><div id="chat_area" class="wrap chat_container"></div></div>
+	
+		<chat_control_area>
+			<input type="text" id="editor" class="chat_input" maxlength='150'></input>
+			<input id="send_button" type="button" value="Send" class="chat_button" onClick=sendPressed()></input>
+		</chat_control_area>
+	</div>
+</body>
+</html>
