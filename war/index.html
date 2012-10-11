@@ -15,6 +15,10 @@
 		$("#send_button").attr('disabled', 'true');
 		sendMessage( createTokenPacket() );		
 		theChat = new chat( $("#chat_area"), $("#editor") );
+		
+		$(window).unload( function() {
+			sendMessage( createLeavePacket() );
+		});
 	});
 
 	function sendMessage( pack ) {
@@ -31,10 +35,16 @@
 		
 		if( data.type == "token" ) {
 			var token = data.token;
-			openChannel(token);
+			openChannel(token);	
+			
+			sendMessage( createTailPacket() );		
 		}
 		else if( data.type == "message" ) {
 			theChat.addMessage(data);
+		}
+		else if( data.type == "tail" ) {
+			for( var i = 0; i < data.messages.length; i++ )
+				theChat.addMessage( data.messages[i] );
 		}
 	}
 	
@@ -63,6 +73,18 @@
 	function createTokenPacket() {
 		return {
 			type: "get_token"
+		}
+	}
+	
+	function createLeavePacket() {
+		return {
+			type: "leave"
+		}
+	}
+	
+	function createTailPacket() {
+		return {
+			type: "get_tail"
 		}
 	}
 	

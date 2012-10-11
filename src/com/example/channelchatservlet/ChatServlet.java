@@ -21,6 +21,10 @@ import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 
 public class ChatServlet extends HttpServlet {
+
+	private final String _tokenKey = "token_list";
+	private final String _messageKey = "message_list";
+	
 	
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 		throws IOException {
@@ -31,21 +35,35 @@ public class ChatServlet extends HttpServlet {
 		String message_type = req.getParameter("type");
 		String user_name = user.getNickname();
 		
-		if( message_type.compareTo("get_token") == 0 ) {
+		String userId = user.getUserId();
+		
+		if( message_type.compareTo("message") == 0 ) {
+			String message = req.getParameter("text");
+			String chat_message = chatMessage( user_name, message );
+			sendChannelMessageToAll( user_name, chat_message );	
+			addMessageToCache(chat_message);
+		}
+		else if( message_type.compareTo("get_token") == 0 ) {
 			// generate and give token to user 
-			String userId = user.getUserId();
 			ChannelService channelService = ChannelServiceFactory.getChannelService();
 			String token = channelService.createChannel(userId);
-			addToCacheList( "token_list", userId );
+			addToCacheList( _tokenKey, userId );
 			
 			resp.setContentType("text/html");
 			PrintWriter out = resp.getWriter();
 			out.print( tokenMessage( user_name, token ) );
 		}
-		else {
-			String message = req.getParameter("text");
-			String chat_message = chatMessage( user_name, message );
-			sendChannelMessageToAll( user_name, chat_message );
+		else if( message_type.compareTo("get_tail") == 0 ) {
+			
+			String tail = tailMessage();
+			
+			if( tail.length() > 0 ) {
+				ChannelServiceFactory.getChannelService().sendMessage(
+					new ChannelMessage( userId, tail ) );
+			}
+		}
+		else if( message_type.compareTo("leave") == 0 ) {
+			removeFromCacheList( _tokenKey, userId );
 		}
 	}
 
@@ -56,18 +74,34 @@ public class ChatServlet extends HttpServlet {
 		pack.put("text", "'" + message + "'");
 		return responseToJson(pack);
 	}
+	
+	private String tailMessage() {
+		Map pack = new HashMap<String, String>();
+		
+		// also adding messages from cache
+		String messages = messageArrayJson();
+		if( messages.length() > 0 ) {
+			pack.put( "type", "'tail'" );
+			pack.put( "messages", messages );
+		}
+		else
+			return "";
+		
+		return responseToJson(pack);
+	}
 
 	private String tokenMessage(String user_name, String token) {
 		Map pack = new HashMap<String, String>();
 		pack.put("type", "'token'");
 		pack.put("user", "'" + user_name + "'");
 		pack.put("token", "'" + token + "'");
+		
 		return responseToJson(pack);
 	}
-
+	
 	private void sendChannelMessageToAll( String author, String message ) {
 		ChannelService channelService = ChannelServiceFactory.getChannelService();
-		List<String> keys = getUseridListFromCacahe( "token_list" );
+		List<String> keys = getListFromCacahe( _tokenKey );
 		
 		for( String k : keys ) {
 			channelService.sendMessage(new ChannelMessage(k, message));
@@ -89,6 +123,37 @@ public class ChatServlet extends HttpServlet {
 		return response;
 	}
 	
+	private String messageArrayJson() {
+		List<String> messages = getListFromCacahe( _messageKey );
+		
+		if( messages == null )
+			return "";
+		
+		String ret = "[";
+		
+		for( String mess : messages ) {
+			ret += mess + ",";
+		}
+		
+		// Remove trail comma
+		ret = ret.substring( 0, ret.length() - 1 );
+		ret += "]";
+		
+		return ret;
+	}
+	
+	private void addMessageToCache( String message ) {
+		List messages = (List )keycache.get( _messageKey );
+		
+		if( messages == null )
+			messages = new LinkedList<String>();
+		
+		if( messages.size() > 50 )
+			messages.remove( 0 );
+		messages.add( message );
+		keycache.put( _messageKey, messages );
+	}
+	
 	private static MemcacheService keycache = MemcacheServiceFactory.getMemcacheService();
 	
 	public static void addToCacheList( String key, String str ) {
@@ -108,7 +173,13 @@ public class ChatServlet extends HttpServlet {
 		}
 	}
 	
-	private List<String> getUseridListFromCacahe( String key ) {
+	private List<String> getListFromCacahe( String key ) {
 		return (List )keycache.get( key );	
+	}
+	
+	private static void removeFromCacheList( String key, String str ) {
+		List names = (List )keycache.get( key );
+		names.remove( str );
+		keycache.put( key, names );
 	}
 }
