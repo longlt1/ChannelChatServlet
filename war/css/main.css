@@ -10,6 +10,7 @@ body {
 #content {
 	heght: 100%;
 	background:#bdf;
+	padding: 10px; 
 }
 
 .wrap {
@@ -22,6 +23,7 @@ body {
 .chat_container {
 	height: 120px;
 	overflow:auto;
+	background:#fff;
 }
 
 .chat_input {
