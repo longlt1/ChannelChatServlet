@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -20,10 +22,11 @@ import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 
+
 public class ChatServlet extends HttpServlet {
 
-	private final String _tokenKey = "token_list";
-	private final String _messageKey = "message_list";
+	private static final String _tokenKey = "token_list";
+	private static final String _messageKey = "message_list";
 	
 	
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -44,23 +47,15 @@ public class ChatServlet extends HttpServlet {
 			addMessageToCache(chat_message);
 		}
 		else if( message_type.compareTo("get_token") == 0 ) {
-			// generate and give token to user 
+			// generate and give token to user
 			ChannelService channelService = ChannelServiceFactory.getChannelService();
 			String token = channelService.createChannel(userId);
 			addToCacheList( _tokenKey, userId );
 			
+			resp.setCharacterEncoding("UTF-8");
 			resp.setContentType("text/html");
 			PrintWriter out = resp.getWriter();
 			out.print( tokenMessage( user_name, token ) );
-		}
-		else if( message_type.compareTo("get_tail") == 0 ) {
-			
-			String tail = tailMessage();
-			
-			if( tail.length() > 0 ) {
-				ChannelServiceFactory.getChannelService().sendMessage(
-					new ChannelMessage( userId, tail ) );
-			}
 		}
 		else if( message_type.compareTo("leave") == 0 ) {
 			removeFromCacheList( _tokenKey, userId );
@@ -75,26 +70,18 @@ public class ChatServlet extends HttpServlet {
 		return responseToJson(pack);
 	}
 	
-	private String tailMessage() {
-		Map pack = new HashMap<String, String>();
-		
-		// also adding messages from cache
-		String messages = messageArrayJson();
-		if( messages.length() > 0 ) {
-			pack.put( "type", "'tail'" );
-			pack.put( "messages", messages );
-		}
-		else
-			return "";
-		
-		return responseToJson(pack);
-	}
-
 	private String tokenMessage(String user_name, String token) {
 		Map pack = new HashMap<String, String>();
 		pack.put("type", "'token'");
 		pack.put("user", "'" + user_name + "'");
 		pack.put("token", "'" + token + "'");
+		pack.put("test", "'пиздец'");
+		
+		String messages = messageArrayJson();
+		
+		if( messages.length() > 0 ) {
+			pack.put( "messages", messages );
+		}
 		
 		return responseToJson(pack);
 	}

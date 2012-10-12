@@ -21,7 +21,7 @@ body {
 }
 
 .chat_container {
-	height: 120px;
+	height: 150px;
 	overflow:auto;
 	background:#fff;
 }
