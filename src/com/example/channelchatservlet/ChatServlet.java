@@ -75,7 +75,6 @@ public class ChatServlet extends HttpServlet {
 		pack.put("type", "'token'");
 		pack.put("user", "'" + user_name + "'");
 		pack.put("token", "'" + token + "'");
-		pack.put("test", "'пиздец'");
 		
 		String messages = messageArrayJson();
 		
