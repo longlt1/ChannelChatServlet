@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="css/main.css" type="text/css" />
 	<script src='/_ah/channel/jsapi'></script>
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+	<script type="text/javascript" src="lib/spin.min.js"></script>
 </head>
 <script>
 
@@ -19,6 +20,8 @@
 		$(window).unload( function() {
 			sendMessage( createLeavePacket() );
 		});
+		
+		showBusyIndicator(true);
 	});
 
 	function sendMessage( pack ) {
@@ -48,6 +51,7 @@
 	}
 	
 	function channelOpened() {
+		showBusyIndicator(false);
 		$("#status").text("Channel opened");
 		$("#send_button").removeAttr("disabled");
 	}
@@ -127,6 +131,39 @@
 					text: mess };
 	}
 	
+	var busySpinner = null;
+	
+	function showBusyIndicator(val) {
+	
+		if( busySpinner ==  null ) {
+			var opts = {
+				  lines: 11, // The number of lines to draw
+				  length: 7, // The length of each line
+				  width: 8, // The line thickness
+				  radius: 24, // The radius of the inner circle
+				  corners: 1, // Corner roundness (0..1)
+				  rotate: 0, // The rotation offset
+				  color: '#e99', // #rgb or #rrggbb
+				  speed: 1, // Rounds per second
+				  trail: 60, // Afterglow percentage
+				  shadow: false, // Whether to render a shadow
+				  hwaccel: false, // Whether to use hardware acceleration
+				  className: 'spinner', // The CSS class to assign to the spinner
+				  zIndex: 2e9, // The z-index (defaults to 2000000000)
+				  top: 'auto', // Top position relative to parent in px
+				  left: 'auto' // Left position relative to parent in px
+				};
+		
+			busySpinner = new Spinner(opts);
+		}
+	
+		var target = document.getElementById('chat-wrap');
+
+		if( val )
+			busySpinner.spin(target);
+		else
+			busySpinner.stop();	
+	}
 </script>
 <body>
 	<div id="content">
@@ -139,5 +176,8 @@
 			<input id="send_button" type="button" value="Send" class="chat_button" onClick=sendPressed()></input>
 		</chat_control_area>
 	</div>
+	<br>
+	Example of a GAE Channel - based chat. See source code on <a href="https://github.com/diman4ik/ChannelChatServlet">github</a>.  
+	Download Android <a href="chat_activity.apk" target="_blank">client</a>.
 </body>
 </html>
